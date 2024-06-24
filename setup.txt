@@ -1,0 +1,55 @@
+git clone https://github.com/Azure-Samples/containerapps-albumapi-python.git
+
+git remote add myrepo https://github.com/btindol/containerapps-albumapi-python.git
+
+git remote remove origin
+
+
+git init
+>> git add README.md
+>> git commit -m "first commit"
+>> git branch -M main
+>> git remote add origin https://github.com/btindol/containerapps-albumapi-python.git
+>> git push -u origin main
+
+az login
+
+#Define the following variables in your PowerShell console.
+$ResourceGroup = "album-containerapps"
+$Location = "canadacentral"
+$Environment = "env-album-containerapps"
+$APIName="album-api"
+$FrontendName="album-ui"
+$GITHUB_USERNAME = "btindol"
+
+#Next, define a container registry name unique to you.
+$ACRName = "acaalbums"+$GITHUB_USERNAME
+
+# cd into directory
+cd src  
+
+# Create a resource group
+az group create --name $ResourceGroup --location $Location
+
+# Create an Azure Container Registry
+az acr create --resource-group $ResourceGroup --name $ACRName --sku Basic --admin-enabled true
+
+# Build and push Docker image
+az acr build --registry $ACRName --image $APIName .
+
+# Create container app environment
+az containerapp env create --name $Environment --resource-group $ResourceGroup --location $Location
+
+# Deploy your image to container app
+$AppFqdn = az containerapp create `
+  --name $APIName `
+  --resource-group $ResourceGroup `
+  --environment $Environment `
+  --image "$ACRName.azurecr.io/$APIName" `
+  --target-port 8080 `
+  --ingress external `
+  --registry-server "$ACRName.azurecr.io" `
+  --query properties.configuration.ingress.fqdn `
+  --output tsv
+
+
