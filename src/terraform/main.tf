@@ -49,7 +49,9 @@ variable "apim_product_name" {
 variable "flask_app_url" {
   default = "https://album-api.happymushroom-e864d1c9.canadacentral.azurecontainerapps.io"
 }
-
+variable "frontend_url" {
+  default = "https://albumstaticwebapp.z9.web.core.windows.net"  # Frontend URL
+}
 # Resource Group
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
@@ -153,6 +155,7 @@ resource "azurerm_api_management_api_operation" "apim_api_operation" {
 }
 
 # API Management API Operation Policy
+# API Management API Operation Policy
 resource "azurerm_api_management_api_operation_policy" "apim_api_operation_policy" {
   operation_id        = azurerm_api_management_api_operation.apim_api_operation.operation_id
   api_name            = azurerm_api_management_api.apim_api.name
@@ -161,6 +164,15 @@ resource "azurerm_api_management_api_operation_policy" "apim_api_operation_polic
   xml_content         = <<XML
 <policies>
     <inbound>
+        <set-header name="Access-Control-Allow-Origin" exists-action="override">
+            <value>${var.frontend_url}</value>
+        </set-header>
+        <set-header name="Access-Control-Allow-Methods" exists-action="override">
+            <value>GET, OPTIONS</value>
+        </set-header>
+        <set-header name="Access-Control-Allow-Headers" exists-action="override">
+            <value>Content-Type, Authorization, Ocp-Apim-Subscription-Key</value>
+        </set-header>
         <set-backend-service base-url="${var.flask_app_url}" />
     </inbound>
     <backend>
