@@ -12,7 +12,7 @@
 7) make sure container app cors is enabled ( enable in terraform later)
 
 
-1. **Create `.github/workflows/deploy.yml`**: In your Flask app repository, create the following file:
+########################################
 
 ```yaml
 name: Deploy to Azure
@@ -60,6 +60,8 @@ jobs:
 #################################
 # To Do Next:
 #######
-1) attach api managment and front door 
-2) make the flask app structure actual model controller service and open api specs, bring in enviornment variables to do something like open api.
-3) make react static web app with auth and funcitonality that calls the api.
+1) attach api managment O AUTH addition as well as adding the rate limit factor
+2) Make the next js app use api managment route
+3) make next js have auth 
+4) might have to pay but enable front door which isnt allowd without subscription
+5) make the flask app structure actual model controller service and open api specs, bring in enviornment variables to do something like open api.
