@@ -1,3 +1,7 @@
+#############################################################################
+# Run this to launch container flask app with az shell commands
+##############################
+
 git clone https://github.com/Azure-Samples/containerapps-albumapi-python.git
 
 git remote add myrepo https://github.com/btindol/containerapps-albumapi-python.git
@@ -36,7 +40,7 @@ az acr create --resource-group $ResourceGroup --name $ACRName --sku Basic --admi
 
 # Build and push Docker image
 az acr build --registry $ACRName --image $APIName .
-az acr build --registry acaalbumsbtindol --image album-api:latest .
+
 # Create container app environment
 az containerapp env create --name $Environment --resource-group $ResourceGroup --location $Location
 
@@ -53,3 +57,101 @@ $AppFqdn = az containerapp create `
   --output tsv
 
 
+##############################################################################################################################
+# Run the equivalet with terraform and github actions.
+###########################
+1) run the terraform init, plan and apply on main tf (in terraform directory)
+2) go to flask app.
+3) make service principle (https://github.com/btindol/flask_template.git) make it a secret
+4) make github actions workflow
+
+
+
+### Step-by-Step Guide to Build, Push Docker Image, and Deploy to Container App Using GitHub Actions
+
+#### Prerequisites
+1. **Azure Service Principal**: Ensure you have an Azure service principal. You can create one using the Azure CLI:
+   ```sh
+   az ad sp create-for-rbac --name "myServicePrincipal" --role Contributor --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group-name} --sdk-auth
+
+   Save the JSON output as a GitHub secret named `AZURE_CREDENTIALS`.
+
+2. **GitHub Repository**: Ensure your Flask app repository is set up on GitHub (as it appears you have).
+
+### Step 1: Create the GitHub Actions Workflow
+
+1. **Create `.github/workflows/deploy.yml`**: In your Flask app repository, create the following file:
+
+```yaml
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+      - terraform-flask-deployment
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Azure CLI
+      uses: azure/setup-azure-cli@v1
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Build and push Docker image
+      run: |
+        ACR_NAME=acaalbumsbtindol
+        API_NAME=album-api
+        az acr build --registry $ACR_NAME --image $API_NAME .
+
+    - name: Create container app environment
+      run: |
+        ENVIRONMENT_NAME=env-album-containerapps
+        RESOURCE_GROUP=album-containerapps
+        LOCATION=canadacentral
+        az containerapp env create --name $ENVIRONMENT_NAME --resource-group $RESOURCE_GROUP --location $LOCATION
+
+    - name: Deploy image to container app
+      run: |
+        API_NAME=album-api
+        ENVIRONMENT_NAME=env-album-containerapps
+        RESOURCE_GROUP=album-containerapps
+        ACR_NAME=acaalbumsbtindol
+        az containerapp create --name $API_NAME --resource-group $RESOURCE_GROUP --environment $ENVIRONMENT_NAME --image "$ACR_NAME.azurecr.io/$API_NAME" --target-port 8080 --ingress external --registry-server "$ACR_NAME.azurecr.io"
+```
+
+### Step 2: Configure GitHub Secrets
+
+1. **Add Azure Credentials**: Go to your GitHub repository, click on **Settings** > **Secrets and variables** > **Actions**, then click **New repository secret**. Add a new secret named `AZURE_CREDENTIALS` and paste the JSON output from the Azure service principal creation.
+
+### Step 3: Verify and Push Changes
+
+1. **Commit and Push Changes**: Make sure you commit the `.github/workflows/deploy.yml` file and push it to your repository.
+
+```sh
+git add .github/workflows/deploy.yml
+git commit -m "Add GitHub Actions workflow for Azure deployment"
+git push origin main
+```
+
+### Explanation
+
+- **Checkout code**: This step checks out your repository code.
+- **Set up Azure CLI**: This sets up the Azure CLI environment.
+- **Login to Azure**: This logs in to Azure using the service principal credentials stored in GitHub Secrets.
+- **Build and push Docker image**: This builds your Docker image and pushes it to the Azure Container Registry (ACR).
+- **Create container app environment**: This creates the container app environment if it does not exist.
+- **Deploy image to container app**: This deploys the Docker image to the Azure Container App.
+
+### Conclusion
+
+By following these steps, you have set up a CI/CD pipeline using GitHub Actions to build, push, and deploy your Flask app to Azure Container Apps. The workflow automates the login process, image building, pushing, and deployment steps, ensuring a seamless deployment process whenever you push changes to your repository.
