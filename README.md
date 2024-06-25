@@ -57,3 +57,9 @@ jobs:
 
 ```
 
+#################################
+# To Do Next:
+#######
+1) attach api managment and front door 
+2) make the flask app structure actual model controller service and open api specs, bring in enviornment variables to do something like open api.
+3) make react static web app with auth and funcitonality that calls the api.
