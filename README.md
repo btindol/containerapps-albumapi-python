@@ -65,3 +65,4 @@ jobs:
 3) make next js have auth 
 4) might have to pay but enable front door which isnt allowd without subscription 
 5) make the flask app structure actual model controller service and open api specs, bring in enviornment variables to do something like open api.
+6) store terraform states in container app.
