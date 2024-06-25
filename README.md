@@ -7,9 +7,9 @@
 3) make service principle az login then
     - az ad sp create-for-rbac --name "myServicePrincipal" --role Contributor --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group-name}
 4) take the json output and maek a github secret in new secret enviornment (environment: container-app-deploy) AZURE_CREDENTIALS
-5) add the .github/workflows/deploy.yml` file which is below.
-
-
+5) add the .github/workflows/deploy.yml` file which is below. (leave api managment stuff commented out.)
+6) add api managment stuff init apply
+7) make sure container app cors is enabled ( enable in terraform later)
 
 
 1. **Create `.github/workflows/deploy.yml`**: In your Flask app repository, create the following file:

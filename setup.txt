@@ -64,7 +64,7 @@ $AppFqdn = az containerapp create `
 2) go to flask app.
 3) make service principle (https://github.com/btindol/flask_template.git) make it a secret
 4) make github actions workflow
-
+5) come back to this repo add in the api managment stuff with the flask url on top of it. run init and plan and apply terraform
 
 
 ### Step-by-Step Guide to Build, Push Docker Image, and Deploy to Container App Using GitHub Actions
@@ -94,13 +94,17 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: container-app-deploy
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
     - name: Set up Azure CLI
-      uses: azure/setup-azure-cli@v1
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          echo "Azure CLI setup complete"
 
     - name: Login to Azure
       uses: azure/login@v1
@@ -109,24 +113,16 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        ACR_NAME=acaalbumsbtindol
-        API_NAME=album-api
-        az acr build --registry $ACR_NAME --image $API_NAME .
+        az acr build --registry acaalbumsbtindol --image album-api .
 
     - name: Create container app environment
       run: |
-        ENVIRONMENT_NAME=env-album-containerapps
-        RESOURCE_GROUP=album-containerapps
-        LOCATION=canadacentral
-        az containerapp env create --name $ENVIRONMENT_NAME --resource-group $RESOURCE_GROUP --location $LOCATION
+        az containerapp env create --name env-album-containerapps --resource-group album-containerapps --location canadacentral
 
     - name: Deploy image to container app
       run: |
-        API_NAME=album-api
-        ENVIRONMENT_NAME=env-album-containerapps
-        RESOURCE_GROUP=album-containerapps
-        ACR_NAME=acaalbumsbtindol
-        az containerapp create --name $API_NAME --resource-group $RESOURCE_GROUP --environment $ENVIRONMENT_NAME --image "$ACR_NAME.azurecr.io/$API_NAME" --target-port 8080 --ingress external --registry-server "$ACR_NAME.azurecr.io"
+        az containerapp create --name album-api --resource-group album-containerapps --environment env-album-containerapps --image "acaalbumsbtindol.azurecr.io/album-api" --target-port 8080 --ingress external --registry-server "acaalbumsbtindol.azurecr.io"
+
 ```
 
 ### Step 2: Configure GitHub Secrets

@@ -1,7 +1,7 @@
 import requests
 
 # URL of the API endpoint
-url = 'https://album-api.blacksmoke-4580d366.canadacentral.azurecontainerapps.io/albums'
+url = 'https://album-api.happymushroom-e864d1c9.canadacentral.azurecontainerapps.io/albums'
 
 # Make the GET request
 response = requests.get(url)
