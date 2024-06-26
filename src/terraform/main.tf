@@ -140,29 +140,29 @@ resource "azurerm_container_app_environment" "main" {
   location            = var.location
 }
 
-# Storage Account for Static Web App
-resource "azurerm_storage_account" "static_web_app" {
-  name                     = var.storage_account_name
-  resource_group_name      = var.resource_group_name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
+# # Storage Account for Static Web App
+# resource "azurerm_storage_account" "static_web_app" {
+#   name                     = var.storage_account_name
+#   resource_group_name      = var.resource_group_name
+#   location                 = var.location
+#   account_tier             = "Standard"
+#   account_replication_type = "LRS"
 
-  static_website {
-    index_document = "index.html"
-    error_404_document = "404.html"
-  }
-}
+#   static_website {
+#     index_document = "index.html"
+#     error_404_document = "404.html"
+#   }
+# }
 
-# Upload Static Files
-resource "azurerm_storage_blob" "static_files" {
-  count                  = length(tolist(fileset("out", "**")))
-  name                   = tolist(fileset("out", "**"))[count.index]
-  storage_account_name   = azurerm_storage_account.static_web_app.name
-  storage_container_name = "$web"
-  type                   = "Block"
-  source                 = "out/${tolist(fileset("out", "**"))[count.index]}"
-}
+# # Upload Static Files
+# resource "azurerm_storage_blob" "static_files" {
+#   count                  = length(tolist(fileset("out", "**")))
+#   name                   = tolist(fileset("out", "**"))[count.index]
+#   storage_account_name   = azurerm_storage_account.static_web_app.name
+#   storage_container_name = "$web"
+#   type                   = "Block"
+#   source                 = "out/${tolist(fileset("out", "**"))[count.index]}"
+# }
 
 # API Management Instance
 resource "azurerm_api_management" "apim" {
