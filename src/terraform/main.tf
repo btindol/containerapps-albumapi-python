@@ -52,6 +52,72 @@ variable "flask_app_url" {
 variable "frontend_url" {
   default = "https://albumstaticwebapp.z9.web.core.windows.net"  # Frontend URL
 }
+
+###################################################################################################
+
+# Azure AD App registration
+variable "azuread_tenant_id" {
+  description = "Azure AD tenant ID"
+  default     = "9484a8f8-13d0-471a-9f99-9f4aa9c2159f"  # Replace with your actual Azure AD tenant ID
+}
+
+
+resource "random_password" "nextjs_app_password" {
+  length  = 16
+  special = true
+}
+
+data "azuread_client_config" "current" {}
+
+resource "azuread_application" "nextjs_app" {
+  display_name = "NextjsApp"
+  web {
+    redirect_uris = [
+      "${var.frontend_url}/",
+      "${var.frontend_url}/auth/callback",
+      "${var.frontend_url}/auth/signin",
+      "${var.frontend_url}/auth/signout",
+      "http://localhost:3000/",
+      "http://localhost:3000/auth/callback",
+      "http://localhost:3000/auth/signin",
+      "http://localhost:3000/auth/signout",
+      "http://localhost:3000/api/auth/callback/azure-ad"
+    ]
+  }
+  owners = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_service_principal" "nextjs_sp" {
+  client_id = azuread_application.nextjs_app.client_id
+  app_role_assignment_required = false
+  owners         = [data.azuread_client_config.current.object_id]
+}
+
+
+resource "time_rotating" "example" {
+  rotation_days = 7
+}
+resource "azuread_application_password" "nextjs_app_secret" {
+  application_id = azuread_application.nextjs_app.id 
+  rotate_when_changed = {
+    rotation = time_rotating.example.id
+  }
+
+}
+output "application_id" {
+  value = azuread_application.nextjs_app.id
+}
+
+output "application_secret" {
+  value     = azuread_application_password.nextjs_app_secret.value
+  sensitive = true
+}
+
+output "application_redirect_uris" {
+  value = azuread_application.nextjs_app.web[0].redirect_uris
+}
+
+###################################################################################################
 # Resource Group
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
@@ -161,7 +227,7 @@ resource "azurerm_api_management_api_operation_policy" "apim_api_operation_polic
   api_name            = azurerm_api_management_api.apim_api.name
   api_management_name = azurerm_api_management.apim.name
   resource_group_name = var.resource_group_name
-  xml_content         = <<XML
+  xml_content         =  <<XML
 <policies>
     <inbound>
         <set-header name="Access-Control-Allow-Origin" exists-action="override">
@@ -187,6 +253,7 @@ resource "azurerm_api_management_api_operation_policy" "apim_api_operation_polic
 </policies>
 XML
 }
+
 
 # API Management API Product
 resource "azurerm_api_management_product" "apim_product" {

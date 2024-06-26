@@ -10,6 +10,25 @@
 5) add the .github/workflows/deploy.yml` file which is below. (leave api managment stuff commented out.)
 6) add api managment stuff init apply
 7) make sure container app cors is enabled ( enable in terraform later)
+8) uncomment aad stuff and run terraform init
+
+
+9) Create static web app.
+
+az staticwebapp create `
+    --name "album-static-web-app" `
+    --resource-group "album-containerapps" `
+    --source "https://github.com/btindol/nextjs-template" `
+    --location "canadacentral" `
+    --branch "main" `
+    --token "YOUR_GITHUB_TOKEN" `
+    --app-location "/" `
+    --output-location "out" `
+    --login-with-azure-ad true
+    
+  
+
+az staticwebapp secrets list --name album-static-web-app --resource-group album-containerapps
 
 
 ########################################
