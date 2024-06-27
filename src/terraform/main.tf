@@ -1,3 +1,8 @@
+
+###################################################################################################
+# Run 1: just the stuff in this seciton
+
+# SECTION 1: CREATE THESE RESOURCES (RESOURCE GROUP, CONTAINER REGISTRY, CONTAINER APP ENVIRONMENT)
 provider "azurerm" {
   features {}
 }
@@ -6,6 +11,10 @@ variable "resource_group_name" {
   default = "album-containerapps"
 }
 
+
+variable "acr_name" {
+  default = "acaalbumsbtindol"
+}
 variable "location" {
   default = "canadacentral"
 }
@@ -14,111 +23,6 @@ variable "environment_name" {
   default = "env-album-containerapps"
 }
 
-variable "api_name" {
-  default = "album-api"
-}
-
-variable "frontend_name" {
-  default = "album-ui"
-}
-
-variable "github_username" {
-  default = "btindol"
-}
-
-variable "storage_account_name" {
-  default = "albumstaticwebapp"
-}
-
-variable "acr_name" {
-  default = "acaalbumsbtindol"
-}
-
-variable "apim_name" {
-  default = "album-apim"
-}
-
-variable "apim_api_name" {
-  default = "album-api"
-}
-
-variable "apim_product_name" {
-  default = "album-product"
-}
-
-variable "flask_app_url" {
-  default = "https://album-api.happymushroom-e864d1c9.canadacentral.azurecontainerapps.io"
-}
-variable "frontend_url" {
-  default = "https://albumstaticwebapp.z9.web.core.windows.net"  # Frontend URL
-}
-
-###################################################################################################
-
-# Azure AD App registration
-variable "azuread_tenant_id" {
-  description = "Azure AD tenant ID"
-  default     = "9484a8f8-13d0-471a-9f99-9f4aa9c2159f"  # Replace with your actual Azure AD tenant ID
-}
-
-
-resource "random_password" "nextjs_app_password" {
-  length  = 16
-  special = true
-}
-
-data "azuread_client_config" "current" {}
-
-resource "azuread_application" "nextjs_app" {
-  display_name = "NextjsApp"
-  web {
-    redirect_uris = [
-      "${var.frontend_url}/",
-      "${var.frontend_url}/auth/callback",
-      "${var.frontend_url}/auth/signin",
-      "${var.frontend_url}/auth/signout",
-      "http://localhost:3000/",
-      "http://localhost:3000/auth/callback",
-      "http://localhost:3000/auth/signin",
-      "http://localhost:3000/auth/signout",
-      "http://localhost:3000/api/auth/callback/azure-ad"
-    ]
-  }
-  owners = [data.azuread_client_config.current.object_id]
-}
-
-resource "azuread_service_principal" "nextjs_sp" {
-  client_id = azuread_application.nextjs_app.client_id
-  app_role_assignment_required = false
-  owners         = [data.azuread_client_config.current.object_id]
-}
-
-
-resource "time_rotating" "example" {
-  rotation_days = 7
-}
-resource "azuread_application_password" "nextjs_app_secret" {
-  application_id = azuread_application.nextjs_app.id 
-  rotate_when_changed = {
-    rotation = time_rotating.example.id
-  }
-
-}
-output "application_id" {
-  value = azuread_application.nextjs_app.id
-}
-
-output "application_secret" {
-  value     = azuread_application_password.nextjs_app_secret.value
-  sensitive = true
-}
-
-output "application_redirect_uris" {
-  value = azuread_application.nextjs_app.web[0].redirect_uris
-}
-
-###################################################################################################
-# Resource Group
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
@@ -139,32 +43,48 @@ resource "azurerm_container_app_environment" "main" {
   resource_group_name = var.resource_group_name
   location            = var.location
 }
+###################################################################################################
+# STEP 2:  Run flask app creation and create static web app
+################################################################
 
-# # Storage Account for Static Web App
-# resource "azurerm_storage_account" "static_web_app" {
-#   name                     = var.storage_account_name
-#   resource_group_name      = var.resource_group_name
-#   location                 = var.location
-#   account_tier             = "Standard"
-#   account_replication_type = "LRS"
+###################################################################################################
+# SECTION 3: CREATE THESE RESOURCES (API MANAGEMENT, API, API OPERATION, API OPERATION POLICY, API PRODUCT, PRODUCT API LINK, AZURE AD APP REGISTRATION, AZURE AD APP PASSWORD)
 
-#   static_website {
-#     index_document = "index.html"
-#     error_404_document = "404.html"
-#   }
-# }
+# Change the values: flask_app_url, frontend_url, azuread_tenant_id, 
 
-# # Upload Static Files
-# resource "azurerm_storage_blob" "static_files" {
-#   count                  = length(tolist(fileset("out", "**")))
-#   name                   = tolist(fileset("out", "**"))[count.index]
-#   storage_account_name   = azurerm_storage_account.static_web_app.name
-#   storage_container_name = "$web"
-#   type                   = "Block"
-#   source                 = "out/${tolist(fileset("out", "**"))[count.index]}"
-# }
 
-# API Management Instance
+variable "api_name" {
+  default = "album-api"
+}
+
+variable "frontend_name" {
+  default = "album-ui"
+}
+
+variable "github_username" {
+  default = "btindol"
+}
+
+variable "apim_name" {
+  default = "album-apim"
+}
+
+variable "apim_api_name" {
+  default = "album-api"
+}
+
+variable "apim_product_name" {
+  default = "album-product"
+}
+
+variable "flask_app_url" {
+  default = "https://album-api.salmonground-7f30861a.canadacentral.azurecontainerapps.io"
+}
+variable "frontend_url" {
+  default = "https://happy-ground-0658ef70f.5.azurestaticapps.net"  # Frontend URL
+}
+
+
 resource "azurerm_api_management" "apim" {
   name                = var.apim_name
   location            = var.location
@@ -279,7 +199,64 @@ output "apim_url" {
   value = azurerm_api_management.apim.gateway_url
 }
 
-# Output the URL of the static web app
-output "static_web_app_url" {
-  value = azurerm_storage_account.static_web_app.primary_web_endpoint
+# Azure AD App registration
+variable "azuread_tenant_id" {
+  description = "Azure AD tenant ID"
+  default     = "9484a8f8-13d0-471a-9f99-9f4aa9c2159f"  # Replace with your actual Azure AD tenant ID
+}
+
+
+resource "random_password" "nextjs_app_password" {
+  length  = 16
+  special = true
+}
+
+data "azuread_client_config" "current" {}
+
+resource "azuread_application" "nextjs_app" {
+  display_name = "NextjsApp"
+  web {
+    redirect_uris = [
+      "${var.frontend_url}/",
+      "${var.frontend_url}/auth/callback",
+      "${var.frontend_url}/auth/signin",
+      "${var.frontend_url}/auth/signout",
+      "http://localhost:3000/",
+      "http://localhost:3000/auth/callback",
+      "http://localhost:3000/auth/signin",
+      "http://localhost:3000/auth/signout",
+      "http://localhost:3000/api/auth/callback/azure-ad"
+    ]
+  }
+  owners = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_service_principal" "nextjs_sp" {
+  client_id = azuread_application.nextjs_app.client_id
+  app_role_assignment_required = false
+  owners         = [data.azuread_client_config.current.object_id]
+}
+
+
+resource "time_rotating" "example" {
+  rotation_days = 7
+}
+resource "azuread_application_password" "nextjs_app_secret" {
+  application_id = azuread_application.nextjs_app.id 
+  rotate_when_changed = {
+    rotation = time_rotating.example.id
+  }
+
+}
+output "application_id" {
+  value = azuread_application.nextjs_app.id
+}
+
+output "application_secret" {
+  value     = azuread_application_password.nextjs_app_secret.value
+  sensitive = true
+}
+
+output "application_redirect_uris" {
+  value = azuread_application.nextjs_app.web[0].redirect_uris
 }
