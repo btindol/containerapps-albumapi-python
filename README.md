@@ -13,3 +13,13 @@ ghub_token = "ghub_token"
 
 
 # Note change flask app ports to match the repo
+
+
+# TO DO:
+- Add api managment
+- Add security groups 
+- Add aad and auth
+- Add front door
+- Change the DNS name 
+- Test things
+- Change container app port from 80 to match the flask repo!!!!!
