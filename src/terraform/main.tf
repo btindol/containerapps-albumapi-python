@@ -165,14 +165,14 @@ resource "azurerm_container_app" "main" {
 
       env {
         name  = "PORT"
-        value = "80" # Ensure this matches the Dockerfile port
+        value = "8080" # Ensure this matches the Dockerfile port
       }
     }
   }
 
   ingress {
     external_enabled = true
-    target_port      = 80
+    target_port      = 8080
     traffic_weight {
       percentage      = 100
       latest_revision = true
