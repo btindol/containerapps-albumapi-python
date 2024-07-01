@@ -36,3 +36,9 @@ Thumbs.db
 
 # Ignore vscode settings
 .vscode/
+
+
+# Ignore specific files
+output.txt
+static_web_app_token.txt
+static_web_app_url.txt
