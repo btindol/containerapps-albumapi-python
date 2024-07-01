@@ -1,7 +1,3 @@
-provider "azurerm" {
-  features {}
-}
-
 variable "resource_group_name" {
   default = "album-containerappszz"
 }
@@ -24,6 +20,40 @@ variable "docker_image" {
 
 variable "flask_repo_url" {
   default = "https://github.com/btindol/flask_template.git"
+}
+
+variable "static_web_app_name" {
+  default = "album-static-web-appz"
+}
+
+variable "repo_url" {
+  default = "https://github.com/btindol/nextjs-template.git"
+}
+
+variable "app_location" {
+  default = "/"
+}
+
+variable "output_location" {
+  default = "out"
+}
+
+variable "api_location" {
+  default = "api"
+}
+
+variable "ghub_token" {
+  description = "GitHub Token"
+  type        = string
+  sensitive   = true
+}
+
+variable "static_web_app_location" {
+  default = "eastus2"
+}
+
+provider "azurerm" {
+  features {}
 }
 
 resource "azurerm_resource_group" "main" {
@@ -135,7 +165,7 @@ resource "azurerm_container_app" "main" {
 
       env {
         name  = "PORT"
-        value = "8080"
+        value = "8080" # Ensure this matches the Dockerfile port
       }
     }
   }
@@ -152,6 +182,51 @@ resource "azurerm_container_app" "main" {
   revision_mode = "Single"
 }
 
+resource "null_resource" "deploy_static_web_app" {
+  depends_on = [azurerm_container_app.main]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      $ErrorActionPreference = "Stop"
+
+      $env:STATIC_WEB_APP_NAME = "${var.static_web_app_name}"
+      $env:RESOURCE_GROUP_NAME = "${var.resource_group_name}"
+      $env:STATIC_WEB_APP_LOCATION = "${var.static_web_app_location}"
+      $env:REPO_URL = "${var.repo_url}"
+      $env:APP_LOCATION = "${var.app_location}"
+      $env:OUTPUT_LOCATION = "${var.output_location}"
+      $env:API_LOCATION = "${var.api_location}"
+      $env:GHUB_TOKEN = "${var.ghub_token}"
+
+      # Create the Azure Static Web App
+      az staticwebapp create `
+        --name $env:STATIC_WEB_APP_NAME `
+        --resource-group $env:RESOURCE_GROUP_NAME `
+        --location $env:STATIC_WEB_APP_LOCATION `
+        --source $env:REPO_URL `
+        --app-location $env:APP_LOCATION `
+        --output-location $env:OUTPUT_LOCATION `
+        --api-location $env:API_LOCATION `
+        --branch main `
+        --token $env:GHUB_TOKEN
+
+      # Generate and retrieve the Static Web App API token
+      $SWA_API_TOKEN = az staticwebapp secrets list `
+        --name $env:STATIC_WEB_APP_NAME `
+        --resource-group $env:RESOURCE_GROUP_NAME `
+        --query "properties.apiKey" `
+        --output tsv
+
+
+    EOT
+    interpreter = ["PowerShell", "-Command"]
+  }
+}
+
 output "container_app_fqdn" {
   value = azurerm_container_app.main.latest_revision_fqdn
 }
+
+
+
+
